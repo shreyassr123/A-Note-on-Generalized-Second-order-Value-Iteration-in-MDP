@@ -1,292 +1,201 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 11 16:53:20 2022
+Experiment script for comparing Value Iteration and Newton-based Q-value 
+iteration methods on random MDPs.
 
+Created on Thu Aug 11 16:53:20 2022
 @author: Shreyas
 """
 
-
-
 import numpy as np
-import mdptoolbox, mdptoolbox.example
 import random
-from numpy.random import seed
 import time
-from datetime import datetime
-import sys
+import mdptoolbox, mdptoolbox.example
 
 
+# ----------------------------
+# Experiment Configuration (Can be varied)
+# ----------------------------
+S, A       = 50, 25             # States and actions 
+discount   = 0.9                 # Discount factor
+episodes   = 20                  # Number of experiments
+iterations = 5000                # Max iterations
+SET        = 1e-6                # Successive error threshold
+w_val      = 1.3                  # Relaxation parameter
 
-s =50
-a =25
 
-discount = 0.9
-episodes = 20
+# ----------------------------
+# Storage for results
+# ----------------------------
+Tot_time1, Tot_error1, Tot_iter1 = [], [], []
+Tot_time2, Tot_error2, Tot_iter2 = [], [], []
+Tot_time3, Tot_error3, Tot_iter3 = [], [], []
+Tot_time4, Tot_error4, Tot_iter4 = [], [], []
+Tot_time5, Tot_error5, Tot_iter5 = [], [], []
+Tot_time6, Tot_error6, Tot_iter6 = [], [], []
 
-iterations=5000
 
-SET = 10**(-6) #successive error threshold
-w_val = 1.3
+# ----------------------------
+# Main Experiment Loop
+# ----------------------------
+print("S =", S, "A =", A, "episodes =", episodes, "iterations =", iterations,
+      "SET =", SET, "Gamma =", discount, "\n")
 
-vi_diff = np.zeros((episodes,iterations,1))
-newton_diff= np.zeros((episodes,iterations,1))
-gen_newton_diff = np.zeros((episodes,iterations,1))
+for ep in range(1, episodes + 1):
 
-# vi_pol_diff = np.zeros((episodes,iterations,1))
-# newton_pol_diff = np.zeros((episodes,iterations,1))
+    print("***********", ep, "************")
 
-vi_time = np.zeros((episodes,1))
-newton_time = np.zeros((episodes,1))
-gen_newton_time = np.zeros((episodes,1))
-Newton_JacobiQValueIteration_time=np.zeros((episodes,1))
-Newton_GSQValueIteration_time=np.zeros((episodes,1))
-ModifiedNewton_time=np.zeros((episodes,1))
-GSModifiedNewtonQValueIteration_time=np.zeros((episodes,1))
-JacobiModifiedNewtonQValueIteration_time=np.zeros((episodes,1))
-vi_error = np.zeros((episodes,1))
-newton_error = np.zeros((episodes,1))
-gen_newton_error = np.zeros((episodes,1))
-Newton_JacobiQValueIteration_error=np.zeros((episodes,1))
-Newton_GSQValueIteration_error=np.zeros((episodes,1))
-ModifiedNewton_error=np.zeros((episodes,1))
-JacobiModifiedNewtonQValueIteration_error=np.zeros((episodes,1))
-GSModifiedNewtonQValueIteration_error=np.zeros((episodes,1))
-smooth_picard_time=np.zeros((episodes,1))
-smooth_picard_error = np.zeros((episodes,1))
-newtonsmooth_picard_time=np.zeros((episodes,1))
-newtonsmooth_picard_error = np.zeros((episodes,1))
-gn=np.zeros((episodes,1))
-gs=np.zeros((episodes,1))
-nj=np.zeros((episodes,1))
+    np.random.seed(ep * 100)
+    random.seed(ep * 110)
 
-mn=np.zeros((episodes,1))
-sp=np.zeros((episodes,1))
-jsp=np.zeros((episodes,1))
-jmn=np.zeros((episodes,1))
-gsmn=np.zeros((episodes,1))
+    P, R = mdptoolbox.example.rand(S, A)
 
-print("S =",s, "\nA =",a,"\nEpisodes =",episodes, "\nMax Iterations =",iterations,"\nSET =",SET,"\nGamma =",discount)
-
-for count in range(episodes):
-
-    print("*********** Episode",count+1,"************")
-    np.random.seed((count + 1)*100)
-    random.seed((count + 1)*110)
-   
-    P, R = mdptoolbox.example.rand(s, a)
-
-    vi = mdptoolbox.mdp.ValueIteration(P, R, discount,epsilon=0.0000001,max_iter = iterations)
+    vi = mdptoolbox.mdp.ValueIteration(P, R, discount,
+                                       epsilon=1e-7,
+                                       max_iter=iterations)
     vi.run()
-    # print(vi.V)
-    # print(vi.V)
-    #start = time.time()
-    #vi3 = mdptoolbox.mdp.QValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy)
-    
-    
-    #vi3.run()
-    #end = time.time()
-    #vi_time[count] = end-start
 
-    #start = time.time()
-    #vi4 = mdptoolbox.mdp.NewtonQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy)
-    #vi4.run()
-    #end = time.time()
-    
-    
-    
-    #newton_time[count] = end-start
-    
+    # ----------------------------
+    # GenNewton Q-value iteration
+    # ----------------------------
     start = time.time()
-    vi5 = mdptoolbox.mdp.GenNewtonQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi5.run()
-    end = time.time()
-    gen_newton_time[count] = end-start
-    #print("Gen_Newtontime",gen_newton_time)
-    
-    
-    start=time.time()
-    vi7 = mdptoolbox.mdp.NewtonGSQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi7.run()
-    end = time.time()
-    Newton_GSQValueIteration_time[count] = end-start
-    
-    
-    start=time.time()
-    vi6 = mdptoolbox.mdp.NewtonJacobiQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    
-    vi6.run()
-    end = time.time()
-    Newton_JacobiQValueIteration_time[count] = end-start
-    #print('NJacobitime' ,Newton_JacobiQValueIteration_time)
-    
-    
-    
-    #print('GaussSeideltime' ,Newton_GSQValueIteration_time)
-    
-    start=time.time()
-    vi8 = mdptoolbox.mdp.ModifiedNewtonQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi8.run()
-    end = time.time()
-    ModifiedNewton_time[count] = end-start
-    
-    
-    start = time.time()
-    vi9 = mdptoolbox.mdp.SmoothPicardQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi9.run()
-    end = time.time()
-    smooth_picard_time[count]=end-start
-    
-    """
-    
-    start = time.time()
-    vi10 = mdptoolbox.mdp.JacobiModifiedNewtonQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi10.run()
-    end = time.time()
-    JacobiModifiedNewtonQValueIteration_time[count]=end-start
-    
-    start = time.time()
-    vi11 = mdptoolbox.mdp.GSModifiedNewtonQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi11.run()
-    end = time.time()
-    GSModifiedNewtonQValueIteration_time[count]=end-start
-    """
-    start = time.time()
-    vi12 = mdptoolbox.mdp.NewtonSmoothPicardQValueIteration(P,R,discount,max_iter = iterations,opt = vi.V, opt_pol = vi.policy,w = w_val,successive_error_threshold = SET)
-    vi12.run()
-    end = time.time()
-    newtonsmooth_picard_time[count]=end-start
-    # print('GenNewtonQValueIteration')
-    gen_newton_error[count]=np.linalg.norm(vi.V - np.max(vi5.nmodQ,axis = 0),axis=0,ord=np.inf)
-    #print(np.linalg.norm(vi.V - np.max(vi5.nmodQ,axis = 0),axis=0,ord=np.inf))
-    # print(vi5.iter)
-    gn[count]=vi5.iter
-    
+    GenNewtonQ = mdptoolbox.mdp.GenNewtonQValueIteration(
+        P, R, discount, max_iter=iterations, opt=vi.V,
+        opt_pol=vi.policy, w=w_val,
+        successive_error_threshold=SET
+    )
+    GenNewtonQ.run()
+    t = time.time() - start
 
-    # print('NewtonGSQValueIteration')
-    #print(np.linalg.norm(vi.V - np.max(vi7.nmodQ,axis = 0),axis=0,ord=np.inf))
-    # print(vi7.iter)
-    Newton_GSQValueIteration_error[count]=np.linalg.norm(vi.V - np.max(vi7.nmodQ,axis = 0),axis=0,ord=np.inf)
-    gs[count]=vi7.iter
-    # print('NewtonJacobiQValueIteration')
-    #print(np.linalg.norm(vi.V - np.max(vi6.nmodQ,axis = 0),axis=0,ord=np.inf))
-    Newton_JacobiQValueIteration_error[count]=np.linalg.norm(vi.V - np.max(vi6.nmodQ,axis = 0),axis=0,ord=np.inf)
-    # print(vi6.iter)
-    nj[count]=vi6.iter
-    
-    
-    # print('ModifiedNewtonQValueIteration')
-    ModifiedNewton_error[count]=np.linalg.norm(vi.V - np.max(vi8.nmodQ,axis = 0),axis=0,ord=np.inf)
-    #print(np.linalg.norm(vi.V - np.max(vi8.nmodQ,axis = 0),axis=0,ord=np.inf))
-    mn[count]=vi8.iter
-    # print(vi8.iter)   
-    
-    
-    # print('smooth picard')
-    smooth_picard_error[count]=np.linalg.norm(vi.V - np.max(vi9.nmodQ,axis = 0),axis=0,ord=np.inf)
-    # print(vi9.iter)
-    sp[count]=vi9.iter
-    
-    newtonsmooth_picard_error[count]=np.linalg.norm(vi.V - np.max(vi12.nmodQ,axis = 0),axis=0,ord=np.inf)
-    jsp[count]=vi12.iter
-    """
-    # print('Jacobi ModifiedNewtonQValueIteration')
-    JacobiModifiedNewtonQValueIteration_error[count]=np.linalg.norm(vi.V - np.max(vi10.nmodQ,axis = 0),axis=0,ord=np.inf)
-    # print(vi10.iter)
-    jmn[count]=vi10.iter
-    
-    # print('GS ModifiedNewtonQValueIteration')
-    GSModifiedNewtonQValueIteration_error[count]=np.linalg.norm(vi.V - np.max(vi11.nmodQ,axis = 0),axis=0,ord=np.inf)
-    # print(vi11.iter)
-    gsmn[count]=vi11.iter
-    """
-#print(np.linalg.norm(vi.V - np.max(vi3.Q,axis = 0),ord=np.inf)) #Q-bellman
-#print(np.linalg.norm(vi.V - np.max(vi4.nmodQ,axis = 0),axis=0,ord=np.inf))
-print("---------------------")
-sum5=0   
-error5=0
-for i in range(episodes):
-        sum5=sum5+gen_newton_time[i]
-        error5=error5+gen_newton_error[i]
-print('Genaralised Newton average time is', sum5/episodes)  
-print('Genaralised Newton average error is', error5/episodes)  
-print(np.min(gn))
-print(np.max(gn))
-print("---------------------")
-sum7=0 
-error7=0   
-for i in range(episodes):
-        sum7=sum7+Newton_GSQValueIteration_time[i]
-        error7=error7+Newton_GSQValueIteration_error[i]
-print('Gauss Seidel average time is',sum7/episodes) 
-print('Gauss Seidel average error is',error7/episodes) 
-print(np.min(gs))
-print(np.max(gs))
-print("---------------------")
-sum6=0  
-error6=0  
-for i in range(episodes):
-        sum6=sum6+Newton_JacobiQValueIteration_time[i]
-        error6=error6+Newton_JacobiQValueIteration_error[i]
-print('Newton Jacobi average time is',sum6/episodes) 
-print('Newton Jacobi average error is',error6/episodes) 
-print(np.min(nj))
-print(np.max(nj))
-print("---------------------")
-sum8=0 
-error8=0   
-for i in range(episodes):
-        sum8=sum8+ModifiedNewton_time[i]
-        error8=error8+ModifiedNewton_error[i]
-print('Modified Newton average time',sum8/episodes)            
- 
-print('Modified Newton average error',error8/episodes)   
-print(np.min(mn))
-print(np.max(mn)) 
+    error = np.linalg.norm(vi.V - np.max(GenNewtonQ.nmodQ, axis=0), ord=np.inf)
 
-print("---------------------")
-sum9=0 
-error9=0   
-for i in range(episodes):
-        sum9=sum9+smooth_picard_time[i]
-        error9=error9+smooth_picard_error[i]
-print('Smooth Picard average time',sum9/episodes)            
- 
-print('Smooth Picard average error',error9/episodes)  
-print(np.min(sp))
-print(np.max(sp))
-"""
-print("---------------------")
-sum10=0 
-error10=0   
-for i in range(episodes):
-        sum10=sum10+JacobiModifiedNewtonQValueIteration_time[i]
-        error10=error10+JacobiModifiedNewtonQValueIteration_error[i]
-print('JacobiModifiedNewton average time',sum10/episodes)            
- 
-print('JacobiModifiedNewton average error',error10/episodes)  
-print(np.min(jmn))
-print(np.max(jmn))
-print("---------------------")
-sum11=0 
-error11=0   
-for i in range(episodes):
-        sum11=sum11+GSModifiedNewtonQValueIteration_time[i]
-        error11=error11+GSModifiedNewtonQValueIteration_error[i]
-print('GSModifiedNewton average time',sum11/episodes)            
- 
-print('GSModifiedNewton average error',error11/episodes)  
-print(np.min(gsmn))
-print(np.max(gsmn))
-print("---------------------")
-"""
-sum12=0 
-error12=0   
-for i in range(episodes):
-        sum12=sum12+newtonsmooth_picard_time[i]
-        error12=error12+newtonsmooth_picard_error[i]
-print('Newton Picard average time',sum12/episodes)            
- 
-print('Newton Picard average error',error12/episodes)  
-print(np.min(jsp))
-print(np.max(jsp))
+    Tot_time1.append(t)
+    Tot_error1.append(error)
+    Tot_iter1.append(GenNewtonQ.iter)
+
+    # ----------------------------
+    # NewtonGS Q-value iteration
+    # ----------------------------
+    start = time.time()
+    NewtonGSQ = mdptoolbox.mdp.NewtonGSQValueIteration(
+        P, R, discount, max_iter=iterations, opt=vi.V,
+        opt_pol=vi.policy, w=w_val,
+        successive_error_threshold=SET
+    )
+    NewtonGSQ.run()
+    t = time.time() - start
+
+    error = np.linalg.norm(vi.V - np.max(NewtonGSQ.nmodQ, axis=0), ord=np.inf)
+
+    Tot_time2.append(t)
+    Tot_error2.append(error)
+    Tot_iter2.append(NewtonGSQ.iter)
+
+    # ----------------------------
+    # NewtonJacobi Q-value iteration
+    # ----------------------------
+    start = time.time()
+    NewtonJacobiQ = mdptoolbox.mdp.NewtonJacobiQValueIteration(
+        P, R, discount, max_iter=iterations, opt=vi.V,
+        opt_pol=vi.policy, w=w_val,
+        successive_error_threshold=SET
+    )
+    NewtonJacobiQ.run()
+    t = time.time() - start
+
+    error = np.linalg.norm(vi.V - np.max(NewtonJacobiQ.nmodQ, axis=0), ord=np.inf)
+
+    Tot_time3.append(t)
+    Tot_error3.append(error)
+    Tot_iter3.append(NewtonJacobiQ.iter)
+
+    # ----------------------------
+    # ModifiedNewton Q-value iteration
+    # ----------------------------
+    start = time.time()
+    ModifiedNewtonQ = mdptoolbox.mdp.ModifiedNewtonQValueIteration(
+        P, R, discount, max_iter=iterations, opt=vi.V,
+        opt_pol=vi.policy, w=w_val,
+        successive_error_threshold=SET
+    )
+    ModifiedNewtonQ.run()
+    t = time.time() - start
+
+    error = np.linalg.norm(vi.V - np.max(ModifiedNewtonQ.nmodQ, axis=0), ord=np.inf)
+
+    Tot_time4.append(t)
+    Tot_error4.append(error)
+    Tot_iter4.append(ModifiedNewtonQ.iter)
+
+    # ----------------------------
+    # SmoothPicard Q-value iteration
+    # ----------------------------
+    start = time.time()
+    SmoothPicardQ = mdptoolbox.mdp.SmoothPicardQValueIteration(
+        P, R, discount, max_iter=iterations, opt=vi.V,
+        opt_pol=vi.policy, w=w_val,
+        successive_error_threshold=SET
+    )
+    SmoothPicardQ.run()
+    t = time.time() - start
+
+    error = np.linalg.norm(vi.V - np.max(SmoothPicardQ.nmodQ, axis=0), ord=np.inf)
+
+    Tot_time5.append(t)
+    Tot_error5.append(error)
+    Tot_iter5.append(SmoothPicardQ.iter)
+
+    # ----------------------------
+    # NewtonSmoothPicard Q-value iteration
+    # ----------------------------
+    start = time.time()
+    NewtonSmoothPicardQ = mdptoolbox.mdp.NewtonSmoothPicardQValueIteration(
+        P, R, discount, max_iter=iterations, opt=vi.V,
+        opt_pol=vi.policy, w=w_val,
+        successive_error_threshold=SET
+    )
+    NewtonSmoothPicardQ.run()
+    t = time.time() - start
+
+    error = np.linalg.norm(vi.V - np.max(NewtonSmoothPicardQ.nmodQ, axis=0), ord=np.inf)
+
+    Tot_time6.append(t)
+    Tot_error6.append(error)
+    Tot_iter6.append(NewtonSmoothPicardQ.iter)
+
+
+# ----------------------------
+# Final Summary
+# ----------------------------
+print("\n\n======================= AVERAGE RESULTS =======================\n")
+
+print("GenNewtonQ Results:")
+print("Time =", np.mean(Tot_time1))
+print("Error =", np.mean(Tot_error1))
+print("Iterations min =", np.min(Tot_iter1), "max =", np.max(Tot_iter1))
+
+print("\nNewtonGSQ Results:")
+print("Time =", np.mean(Tot_time2))
+print("Error =", np.mean(Tot_error2))
+print("Iterations min =", np.min(Tot_iter2), "max =", np.max(Tot_iter2))
+
+print("\nNewtonJacobiQ Results:")
+print("Time =", np.mean(Tot_time3))
+print("Error =", np.mean(Tot_error3))
+print("Iterations min =", np.min(Tot_iter3), "max =", np.max(Tot_iter3))
+
+print("\nModifiedNewtonQ Results:")
+print("Time =", np.mean(Tot_time4))
+print("Error =", np.mean(Tot_error4))
+print("Iterations min =", np.min(Tot_iter4), "max =", np.max(Tot_iter4))
+
+print("\nSmoothPicardQ Results:")
+print("Time =", np.mean(Tot_time5))
+print("Error =", np.mean(Tot_error5))
+print("Iterations min =", np.min(Tot_iter5), "max =", np.max(Tot_iter5))
+
+print("\nNewtonSmoothPicardQ Results:")
+print("Time =", np.mean(Tot_time6))
+print("Error =", np.mean(Tot_error6))
+print("Iterations min =", np.min(Tot_iter6), "max =", np.max(Tot_iter6))
