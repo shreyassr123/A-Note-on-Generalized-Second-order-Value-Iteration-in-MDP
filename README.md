@@ -9,11 +9,11 @@ This repository provides a Python implementation of the algorithms presented in 
 
 ## 📖 Overview  
 
-Value Iteration is a classical, first-order algorithm for solving Markov Decision Processes (MDPs) by approximating the Bellman equation.  
+Value Iteration is a classical, first-order algorithm for solving Markov Decision Problem.
 
 Recently, second-order iterative methods—employing smooth approximations of the max operator—have shown interesting theoretical properties. However, they are **computationally expensive** and **numerically unstable** for large state-action spaces due to the need to evaluate exponential functions.  
 
-To address these issues, this work introduces several **generalized first-order iterative schemes** derived from the second-order formulation. These methods:  
+To address these issues, this work introduces several **first-order iterative schemes** derived from the second-order formulation. These methods:  
 - Provide **global convergence guarantees**  
 - Are **computationally efficient**  
 - Are **easy to implement in practice**  
